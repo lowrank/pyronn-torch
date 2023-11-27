@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+"""Init Module"""
 import sys
 from os.path import dirname
 
@@ -9,8 +9,8 @@ from pyronn_torch.conebeam import ConeBeamProjector
 
 try:
     # Change here if project is renamed and does not equal the package name
-    dist_name = 'pyronn-torch'
-    __version__ = get_distribution(dist_name).version
+    DIST_NAME = 'pyronn-torch'
+    __version__ = get_distribution(DIST_NAME).version
 except DistributionNotFound:
     __version__ = 'unknown'
 finally:
@@ -20,7 +20,7 @@ finally:
 try:
     sys.path.append(dirname(__file__))
     cpp_extension = __import__('pyronn_torch_cpp')
-except Exception as e:
+except ImportError as e:
     import warnings
     warnings.warn(str(e))
     import pyronn_torch.codegen

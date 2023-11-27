@@ -13,17 +13,18 @@ import pyronn_torch
 
 
 class State:
-    def __init__(self,
-                 projection_shape,
-                 volume_shape,
-                 source_points,
-                 inverse_matrices,
-                 projection_matrices,
-                 volume_origin,
-                 volume_spacing,
-                 projection_multiplier,
-                 step_size=1.,
-                 with_texture=True):
+    def __init__(
+            self,
+            projection_shape,
+            volume_shape,
+            source_points,
+            inverse_matrices,
+            projection_matrices,
+            volume_origin,
+            volume_spacing,
+            projection_multiplier,
+            step_size=1.,
+            with_texture=True):
         self.projection_shape = projection_shape
         self.volume_shape = volume_shape
         self.source_points = source_points
@@ -46,11 +47,13 @@ class _ForwardProjection(torch.autograd.Function):
             return_none = False
 
         volume = volume.float().cuda().contiguous()
-        projection = torch.zeros(state.projection_shape,
-                                 device='cuda',
-                                 requires_grad=volume.requires_grad).float().contiguous()
+        projection = torch.zeros(
+            state.projection_shape,
+            device='cuda',
+            requires_grad=volume.requires_grad).float().contiguous()
 
         assert pyronn_torch.cpp_extension
+
         if state.with_texture:
             pyronn_torch.cpp_extension.call_Cone_Projection_Kernel_Tex_Interp_Launcher(
                 inv_matrices=state.inverse_matrices.cuda().contiguous(),
@@ -73,6 +76,7 @@ class _ForwardProjection(torch.autograd.Function):
                 volume_spacing_z=state.volume_spacing[2])
 
         self.state = state
+
         if return_none:
             return projection, None
         else:
@@ -87,9 +91,11 @@ class _ForwardProjection(torch.autograd.Function):
             return_none = False
 
         projection_grad = projection_grad.float().cuda().contiguous()
-        volume_grad = torch.zeros(state.volume_shape,
-                                  device='cuda',
-                                  requires_grad=projection_grad.requires_grad)
+
+        volume_grad = torch.zeros(
+            state.volume_shape,
+            device='cuda',
+            requires_grad=projection_grad.requires_grad)
 
         assert pyronn_torch.cpp_extension
         pyronn_torch.cpp_extension.call_Cone_Backprojection3D_Kernel_Launcher(
@@ -110,16 +116,17 @@ class _BackwardProjection(torch.autograd.Function):
 
 
 class ConeBeamProjector:
-    def __init__(self,
-                 volume_shape,
-                 volume_spacing,
-                 volume_origin,
-                 projection_shape,
-                 projection_spacing,
-                 projection_origin,
-                 projection_matrices,
-                 source_isocenter_distance=1,
-                 source_detector_distance=1):
+    def __init__(
+            self,
+            volume_shape,
+            volume_spacing,
+            volume_origin,
+            projection_shape,
+            projection_spacing,
+            projection_origin,
+            projection_matrices,
+            source_isocenter_distance=1,
+            source_detector_distance=1):
         self._volume_shape = volume_shape
         self._volume_origin = volume_origin
         self._volume_spacing = volume_spacing
@@ -149,55 +156,61 @@ class ConeBeamProjector:
         ]
         projection_matrices = pyconrad.config.get_projection_matrices()
 
-        obj = cls(volume_shape=volume_shape,
-                  volume_spacing=volume_spacing,
-                  volume_origin=volume_origin,
-                  projection_shape=projection_shape,
-                  projection_spacing=projection_spacing,
-                  projection_origin=projection_origin,
-                  projection_matrices=projection_matrices)
+        obj = cls(
+            volume_shape=volume_shape,
+            volume_spacing=volume_spacing,
+            volume_origin=volume_origin,
+            projection_shape=projection_shape,
+            projection_spacing=projection_spacing,
+            projection_origin=projection_origin,
+            projection_matrices=projection_matrices)
         return obj
 
     def new_volume_tensor(self, requires_grad=False):
-        return torch.zeros(self._volume_shape,
-                           requires_grad=requires_grad,
-                           device='cuda')
+        return torch.zeros(
+            self._volume_shape,
+            requires_grad=requires_grad,
+            device='cuda')
 
     def new_projection_tensor(self, requires_grad=False):
-        return torch.zeros(self._projection_shape,
-                           requires_grad=requires_grad,
-                           device='cuda')
+        return torch.zeros(
+            self._projection_shape,
+            requires_grad=requires_grad,
+            device='cuda')
 
     def project_forward(self, volume, step_size=1., use_texture=True):
         return _ForwardProjection.apply(
             volume,
-            State(projection_shape=self._projection_shape,
-                  volume_shape=self._volume_shape,
-                  source_points=self._source_points,
-                  inverse_matrices=self._inverse_matrices,
-                  projection_matrices=self._projection_matrices,
-                  volume_origin=self._volume_origin,
-                  volume_spacing=self._volume_spacing,
-                  projection_multiplier=self._projection_multiplier,
-                  step_size=step_size,
-                  with_texture=use_texture))[0]
+            State(
+                projection_shape=self._projection_shape,
+                volume_shape=self._volume_shape,
+                source_points=self._source_points,
+                inverse_matrices=self._inverse_matrices,
+                projection_matrices=self._projection_matrices,
+                volume_origin=self._volume_origin,
+                volume_spacing=self._volume_spacing,
+                projection_multiplier=self._projection_multiplier,
+                step_size=step_size,
+                with_texture=use_texture))[0]
 
-    def project_backward(self,
-                         projection_stack,
-                         step_size=1.,
-                         use_texture=True):
+    def project_backward(
+            self,
+            projection_stack,
+            step_size=1.,
+            use_texture=True):
         return _BackwardProjection.apply(
             projection_stack,
-            State(projection_shape=self._projection_shape,
-                  volume_shape=self._volume_shape,
-                  source_points=self._source_points,
-                  inverse_matrices=self._inverse_matrices,
-                  projection_matrices=self._projection_matrices,
-                  volume_origin=self._volume_origin,
-                  volume_spacing=self._volume_spacing,
-                  projection_multiplier=self._projection_multiplier,
-                  step_size=step_size,
-                  with_texture=use_texture))[0]
+            State(
+                projection_shape=self._projection_shape,
+                volume_shape=self._volume_shape,
+                source_points=self._source_points,
+                inverse_matrices=self._inverse_matrices,
+                projection_matrices=self._projection_matrices,
+                volume_origin=self._volume_origin,
+                volume_spacing=self._volume_spacing,
+                projection_multiplier=self._projection_multiplier,
+                step_size=step_size,
+                with_texture=use_texture))[0]
 
     def _calc_inverse_matrices(self):
         if self._projection_matrices_numpy is None:
@@ -207,8 +220,8 @@ class ConeBeamProjector:
                 torch.from_numpy(p.astype(np.float32))
                 for p in self._projection_matrices_numpy))
 
-        inv_spacing = np.array([1 / s for s in self._volume_spacing],
-                               np.float32)
+        inv_spacing = np.array(
+            [1 / s for s in self._volume_spacing], np.float32)
 
         camera_centers = list(map(
             lambda x: np.array(np.expand_dims(scipy.linalg.null_space(x), 0), np.float32),

@@ -9,10 +9,10 @@ import numpy as np
 import pyronn_torch
 import torch
 
-
 class State:
-    def __init__(self, detector_origin, detector_spacing, projection_shape, ray_vectors,
-                 volume_origin, volume_shape, volume_spacing):
+    def __init__(
+            self, detector_origin, detector_spacing, projection_shape, ray_vectors,
+            volume_origin, volume_shape, volume_spacing):
         self._volume_shape = volume_shape
         self._volume_origin = volume_origin
         self._volume_spacing = volume_spacing
@@ -24,7 +24,7 @@ class State:
 
 class _ForwardProjection(torch.autograd.Function):
 
-    @staticmethod
+    # @staticmethod
     def forward(self, volume, state=None):
 
         if state is None:
@@ -33,9 +33,11 @@ class _ForwardProjection(torch.autograd.Function):
         else:
             return_none = False
 
-        projection = torch.zeros(state._projection_shape,
-                                 requires_grad=volume.requires_grad,
-                                 device='cuda').float().contiguous()
+        projection = torch.zeros(
+            state._projection_shape,
+            requires_grad=volume.requires_grad,
+            device='cuda').float().contiguous()
+        
         pyronn_torch.cpp_extension.call_Parallel_Projection2D_Kernel_Launcher(
             state._detector_origin,
             state._detector_spacing,
@@ -49,12 +51,13 @@ class _ForwardProjection(torch.autograd.Function):
         )
 
         self.state = state
+
         if return_none:
             return projection, None
         else:
             return projection
 
-    @staticmethod
+    # @staticmethod
     def backward(self, projection_grad, state=None, *args):
 
         if state is None:
@@ -77,6 +80,7 @@ class _ForwardProjection(torch.autograd.Function):
         )
 
         self.state = state
+        
         if return_none:
             return volume_grad, None
         else:
@@ -90,8 +94,9 @@ class _BackwardProjection(torch.autograd.Function):
 
 class ParallelProjector:
 
-    def __init__(self, detector_origin=None, detector_spacing=1, angles=torch.linspace(0, 360, 360 - 1),
-                 volume_origin=None, volume_shape=[256, 256], volume_spacing=[1, 1]):
+    def __init__(
+            self, detector_origin=None, detector_spacing=1, angles=torch.linspace(0, 2*np.pi, 360 - 1),
+            volume_origin=None, volume_shape=[256, 256], volume_spacing=[1, 1]):
         self._volume_shape = volume_shape
         self._volume_origin = volume_origin or [-v/2 for v in reversed(volume_shape)]
         self._volume_spacing = volume_spacing
@@ -102,8 +107,8 @@ class ParallelProjector:
 
     def _calc_ray_vectors(self, angles):
         self._ray_vectors = torch.zeros(angles.shape[0], 2)
-        self._ray_vectors[:, 0] = torch.cos(angles)
-        self._ray_vectors[:, 1] = torch.sin(angles)
+        self._ray_vectors[:, 0] = torch.cos( np.deg2rad(angles) )
+        self._ray_vectors[:, 1] = torch.sin( np.deg2rad(angles) )
 
     def project_forward(self, volume):
         volume = volume.float().cuda().contiguous()
@@ -136,11 +141,12 @@ class ParallelProjector:
         if len(projection.shape) != 3:
             raise ValueError('3D input expected! [batch, number_of_views, image_dim]')
 
-        volume = torch.zeros(projection.shape[0],
-                             1,
-                             self._volume_shape[0],
-                             self._volume_shape[1],
-                             requires_grad=projection.requires_grad).cuda()
+        volume = torch.zeros(
+            projection.shape[0],
+            1,
+            self._volume_shape[0],
+            self._volume_shape[1],
+            requires_grad=projection.requires_grad).cuda()
 
         for i, proj in enumerate(projection):
             volume[i] = _BackwardProjection.apply(proj, State(

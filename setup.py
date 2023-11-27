@@ -34,7 +34,7 @@ if __name__ == "__main__":
                   CUDAExtension(module_name,
                                 [generated_file] + cuda_sources,
                                 extra_compile_args={'cxx': [],
-                                                    'nvcc': ['-arch=sm_35', '-O3', '-allow-unsupported-compiler']})
+                                                    'nvcc': ['-arch=sm_52', '-O3', '-allow-unsupported-compiler']})
               ],
               cmdclass={
                   'build_ext': BuildExtension
@@ -45,7 +45,7 @@ if __name__ == "__main__":
                   CUDAExtension(module_name,
                                 [generated_file] + cuda_sources,
                                 extra_compile_args={'cxx': [],
-                                                    'nvcc': ['-arch=sm_35', '-O3']})
+                                                    'nvcc': ['-arch=sm_52', '-O3']})
               ],
               cmdclass={
                   'build_ext': BuildExtension
